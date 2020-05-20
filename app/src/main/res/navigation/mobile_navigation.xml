@@ -8,7 +8,6 @@
     <fragment
         android:id="@+id/nav_home"
         android:name="com.example.smack.ui.home.HomeFragment"
-        android:label="@string/menu_home"
         tools:layout="@layout/fragment_home">
 
 <!--        <action-->
@@ -32,12 +31,10 @@
     <fragment
         android:id="@+id/nav_gallery"
         android:name="com.example.smack.ui.gallery.GalleryFragment"
-        android:label="@string/menu_gallery"
         tools:layout="@layout/fragment_gallery" />
 
     <fragment
         android:id="@+id/nav_slideshow"
         android:name="com.example.smack.ui.slideshow.SlideshowFragment"
-        android:label="@string/menu_slideshow"
         tools:layout="@layout/fragment_slideshow" />
 </navigation>
