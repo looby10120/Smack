@@ -7,6 +7,8 @@ import android.content.IntentFilter
 import android.graphics.Color
 import android.os.Bundle
 import android.view.View
+import android.view.inputmethod.InputMethodManager
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.drawerlayout.widget.DrawerLayout
@@ -30,6 +32,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         val toolbar: Toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
+        hideKeyboard()
 
         val drawerLayout: DrawerLayout = findViewById(R.id.drawer_layout)
 //        val navView: NavigationView = findViewById(R.id.nav_view)
@@ -87,7 +90,28 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun addChannelClicked(view: View) {
+        if (AuthService.isLoggedIn) {
+            val builder = AlertDialog.Builder(this)
+            val dialogView = layoutInflater.inflate(R.layout.add_channel_dialog, null)
 
+            builder.setPositiveButton("Add") { dialogInterface, _ ->
+                val nameTextField = dialogView.findViewById(R.id.addChannelNameText)
+                val descTextField = dialogView.findViewById(R.id.addChannelDescText)
+                val channelName = nameTextField.text.toString()
+                val channelDesc = descTextField.text.toString()
+                hideKeyboard()
+            }.setNegativeButton("Cancel") { dialogInterface, _ ->
+                hideKeyboard()
+            }.setView(dialogView).show()
+        }
+    }
+
+    private fun hideKeyboard() {
+        val inputManager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+
+        if (inputManager.isAcceptingText) {
+            inputManager.hideSoftInputFromWindow(currentFocus?.windowToken, 0)
+        }
     }
 
 }
