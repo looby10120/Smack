@@ -44,6 +44,7 @@ object UserDataService {
             userEmail = ""
             isLoggedIn = false
         }
+        MessageService.clearMessages()
+        MessageService.clearChannels()
     }
-
 }
