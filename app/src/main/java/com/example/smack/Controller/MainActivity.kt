@@ -67,16 +67,13 @@ class MainActivity : AppCompatActivity() {
         if (App.prefs.isLoggedIn) {
             AuthService.findUserByEmail(this) {}
         }
-    }
 
-    override fun onResume() {
         // Receive data from any Activity that send flag "BROADCAST_USER_DATA_CHANGED" and handle with userDataChangeReceiver
         LocalBroadcastManager.getInstance(this).registerReceiver(
             userDataChangeReceiver, IntentFilter(
                 BROADCAST_USER_DATA_CHANGED
             )
         )
-        super.onResume()
     }
 
     override fun onDestroy() {
@@ -189,6 +186,7 @@ class MainActivity : AppCompatActivity() {
             loginBtnNavHeader.text = getString(R.string.login)
             usernameNavHeader.text = ""
             userEmailNavHeader.text = ""
+            mainChannelName.text = getString(R.string.please_log_in)
             userImageNavHeader.setImageResource(R.drawable.profiledefault)
             userImageNavHeader.setBackgroundColor(Color.TRANSPARENT)
         } else {
