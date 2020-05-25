@@ -8,6 +8,7 @@ import android.graphics.Color
 import android.os.Bundle
 import android.view.View
 import android.view.inputmethod.InputMethodManager
+import android.widget.ArrayAdapter
 import android.widget.EditText
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AlertDialog
@@ -29,12 +30,15 @@ import kotlinx.android.synthetic.main.nav_header_main.*
 class MainActivity : AppCompatActivity() {
 
     private val socket = IO.socket(SOCKET_URL)
+    lateinit var channelAdapter: ArrayAdapter<Channel>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
+        // connect to socket server
         socket.connect()
+        // when receive "channelCreated" from socket server handle with onNewChannel
         socket.on("channelCreated", onNewChannel)
 
         val toggle = ActionBarDrawerToggle(
@@ -45,15 +49,11 @@ class MainActivity : AppCompatActivity() {
             R.string.navigation_drawer_close
         )
         toggle.syncState()
-
-        LocalBroadcastManager.getInstance(this).registerReceiver(
-            userDataChangeReceiver, IntentFilter(
-                BROADCAST_USER_DATA_CHANGED
-            )
-        )
+        setupAdapter()
     }
 
     override fun onResume() {
+        // Receive data from any Activity that send flag "BROADCAST_USER_DATA_CHANGED" and handle with userDataChangeReceiver
         LocalBroadcastManager.getInstance(this).registerReceiver(userDataChangeReceiver, IntentFilter(
             BROADCAST_USER_DATA_CHANGED)
         )
@@ -61,9 +61,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        // Disconnect wit socket server and not receive data or action from broadcast
         socket.disconnect()
         LocalBroadcastManager.getInstance(this).unregisterReceiver(userDataChangeReceiver)
         super.onDestroy()
+    }
+
+    private fun setupAdapter() {
+        channelAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, MessageService.channels)
+        channel_list.adapter = channelAdapter
     }
 
     private val onNewChannel = Emitter.Listener { args ->
@@ -74,12 +80,13 @@ class MainActivity : AppCompatActivity() {
 
             val newChannel = Channel(channelName, channelDescription, channelId)
             MessageService.channels.add(newChannel)
-            println(newChannel.name)
+            channelAdapter.notifyDataSetChanged()
         }
     }
 
+    // Handle receiving broadcast and manage data
     private val userDataChangeReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
+        override fun onReceive(context: Context, intent: Intent?) {
             if (AuthService.isLoggedIn) {
                 UserDataService.apply {
                     usernameNavHeader.text = name
@@ -89,6 +96,12 @@ class MainActivity : AppCompatActivity() {
                     userImageNavHeader.setImageResource(resourceId)
                     userImageNavHeader.setBackgroundColor(returnAvatarColor(avatarColor))
                     loginBtnNavHeader.text = getString(R.string.logout)
+
+                    MessageService.getChannels(context) { complete ->
+                        if (complete) {
+                            channelAdapter.notifyDataSetChanged()
+                        }
+                    }
                 }
             }
         }
@@ -120,6 +133,7 @@ class MainActivity : AppCompatActivity() {
                     val channelName = nameTextField.text.toString()
                     val channelDesc = descTextField.text.toString()
 
+                    // send event "newChannel" with parameter to socket server
                     socket.emit("newChannel", channelName, channelDesc)
                 }.setNegativeButton("Cancel") { _, _ ->
                 }.show()
