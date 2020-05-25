@@ -15,7 +15,7 @@
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
         android:layout_marginEnd="8dp"
-        android:text="Please Log In"
+        android:text="@string/please_log_in"
         android:textAlignment="center"
         android:textSize="20sp"
         android:textStyle="bold"
@@ -31,7 +31,7 @@
         android:layout_marginEnd="8dp"
         android:ems="10"
         android:gravity="start|top"
-        android:hint="message:"
+        android:hint="@string/message"
         android:inputType="textMultiLine"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -48,7 +48,8 @@
         android:src="@drawable/ic_menu_send"
         android:tint="@color/colorPrimary"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        android:contentDescription="@string/sendmessage" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/messageListView"

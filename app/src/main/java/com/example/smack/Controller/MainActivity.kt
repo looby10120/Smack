@@ -13,9 +13,11 @@ import android.widget.EditText
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.collection.arraySetOf
 import androidx.core.view.GravityCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.example.smack.Model.Channel
+import com.example.smack.Model.Message
 import com.example.smack.R
 import com.example.smack.Services.AuthService
 import com.example.smack.Services.MessageService
@@ -43,6 +45,7 @@ class MainActivity : AppCompatActivity() {
         socket.connect()
         // when receive "channelCreated" from socket server handle with onNewChannel
         socket.on("channelCreated", onNewChannel)
+        socket.on("messageCreated", onNewMessage)
 
         val toggle = ActionBarDrawerToggle(
             this,
@@ -53,7 +56,7 @@ class MainActivity : AppCompatActivity() {
         )
         toggle.syncState()
         setupAdapter()
-        
+
         channel_list.setOnItemClickListener { _, _, position, _ ->
             selectChannel = MessageService.channels[position]
             drawer_layout.closeDrawer(GravityCompat.START)
@@ -67,8 +70,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         // Receive data from any Activity that send flag "BROADCAST_USER_DATA_CHANGED" and handle with userDataChangeReceiver
-        LocalBroadcastManager.getInstance(this).registerReceiver(userDataChangeReceiver, IntentFilter(
-            BROADCAST_USER_DATA_CHANGED)
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+            userDataChangeReceiver, IntentFilter(
+                BROADCAST_USER_DATA_CHANGED
+            )
         )
         super.onResume()
     }
@@ -81,7 +86,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupAdapter() {
-        channelAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, MessageService.channels)
+        channelAdapter =
+            ArrayAdapter(this, android.R.layout.simple_list_item_1, MessageService.channels)
         channel_list.adapter = channelAdapter
     }
 
@@ -94,6 +100,22 @@ class MainActivity : AppCompatActivity() {
             val newChannel = Channel(channelName, channelDescription, channelId)
             MessageService.channels.add(newChannel)
             channelAdapter.notifyDataSetChanged()
+        }
+    }
+
+    private val onNewMessage = Emitter.Listener { args ->
+        runOnUiThread {
+            val msgBody = args[0] as String
+            val channelId = args[2] as String
+            val userName = args[3] as String
+            val userAvatar = args[4] as String
+            val userAvatarColor = args[5] as String
+            val id = args[6] as String
+            val timestamp = args[7] as String
+
+            val newMessage = Message(msgBody, userName, channelId, userAvatar, userAvatarColor, id, timestamp)
+            MessageService.messages.add(newMessage)
+            println(newMessage.message)
         }
     }
 
@@ -163,7 +185,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun sendMessageBtnClicked(view: View) {
-        hideKeyboard()
+        if (App.prefs.isLoggedIn && messageTextField.text.isNotEmpty() && selectChannel != null) {
+            val userId = UserDataService.id
+            val channelId = selectChannel?.id
+            socket.emit(
+                "newMessage",
+                messageTextField.text.toString(),
+                userId,
+                channelId,
+                UserDataService.name,
+                UserDataService.avatarName,
+                UserDataService.avatarColor
+            )
+            messageTextField.text.clear()
+            hideKeyboard()
+        }
     }
 
     private fun hideKeyboard() {
