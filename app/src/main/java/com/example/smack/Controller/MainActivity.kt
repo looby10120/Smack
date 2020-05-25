@@ -15,6 +15,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.smack.Model.Channel
 import com.example.smack.Model.Message
 import com.example.smack.R
@@ -34,6 +35,7 @@ class MainActivity : AppCompatActivity() {
 
     private val socket = IO.socket(SOCKET_URL)
     lateinit var channelAdapter: ArrayAdapter<Channel>
+    lateinit var messageAdapter: MessageAdapter
     var selectChannel: Channel? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -88,6 +90,10 @@ class MainActivity : AppCompatActivity() {
         channelAdapter =
             ArrayAdapter(this, android.R.layout.simple_list_item_1, MessageService.channels)
         channel_list.adapter = channelAdapter
+        val layoutManager = LinearLayoutManager(this)
+        messageAdapter = MessageAdapter(this, MessageService.messages)
+        messageListView.adapter = messageAdapter
+        messageListView.layoutManager = layoutManager
     }
 
     private val onNewChannel = Emitter.Listener { args ->
@@ -116,8 +122,18 @@ class MainActivity : AppCompatActivity() {
                     val id = args[6] as String
                     val timestamp = args[7] as String
 
-                    val newMessage = Message(msgBody, userName, channelId, userAvatar, userAvatarColor, id, timestamp)
+                    val newMessage = Message(
+                        msgBody,
+                        userName,
+                        channelId,
+                        userAvatar,
+                        userAvatarColor,
+                        id,
+                        timestamp
+                    )
                     MessageService.messages.add(newMessage)
+                    messageAdapter.notifyDataSetChanged()
+                    messageListView.smoothScrollToPosition(messageAdapter.itemCount - 1)
                 }
             }
         }
@@ -156,8 +172,9 @@ class MainActivity : AppCompatActivity() {
         if (selectChannel != null) {
             MessageService.getMessages(selectChannel!!.id) { complete ->
                 if (complete) {
-                    for (message in MessageService.messages) {
-                        println(message.message)
+                    messageAdapter.notifyDataSetChanged()
+                    if (messageAdapter.itemCount > 0) {
+                        messageListView.smoothScrollToPosition(messageAdapter.itemCount - 1)
                     }
                 }
             }
@@ -167,6 +184,8 @@ class MainActivity : AppCompatActivity() {
     fun loginBtnNavClicked(view: View) {
         if (App.prefs.isLoggedIn) {
             UserDataService.logout()
+            channelAdapter.notifyDataSetChanged()
+            messageAdapter.notifyDataSetChanged()
             loginBtnNavHeader.text = getString(R.string.login)
             usernameNavHeader.text = ""
             userEmailNavHeader.text = ""
