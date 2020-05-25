@@ -13,6 +13,7 @@ import android.widget.EditText
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.GravityCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.example.smack.Model.Channel
 import com.example.smack.R
@@ -25,12 +26,14 @@ import io.socket.client.IO
 import io.socket.emitter.Emitter
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
+import kotlinx.android.synthetic.main.content_main.*
 import kotlinx.android.synthetic.main.nav_header_main.*
 
 class MainActivity : AppCompatActivity() {
 
     private val socket = IO.socket(SOCKET_URL)
     lateinit var channelAdapter: ArrayAdapter<Channel>
+    var selectChannel: Channel? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,6 +53,12 @@ class MainActivity : AppCompatActivity() {
         )
         toggle.syncState()
         setupAdapter()
+        
+        channel_list.setOnItemClickListener { _, _, position, _ ->
+            selectChannel = MessageService.channels[position]
+            drawer_layout.closeDrawer(GravityCompat.START)
+            updateWithChannel()
+        }
 
         if (App.prefs.isLoggedIn) {
             AuthService.findUserByEmail(this) {}
@@ -103,12 +112,21 @@ class MainActivity : AppCompatActivity() {
 
                     MessageService.getChannels(context) { complete ->
                         if (complete) {
-                            channelAdapter.notifyDataSetChanged()
+                            if (MessageService.channels.count() > 0) {
+                                selectChannel = MessageService.channels[0]
+                                channelAdapter.notifyDataSetChanged()
+                                updateWithChannel()
+                            }
                         }
                     }
                 }
             }
         }
+    }
+
+    fun updateWithChannel() {
+        mainChannelName.text = resources.getString(R.string.channel_name, selectChannel?.name)
+        // download message for channel
     }
 
     fun loginBtnNavClicked(view: View) {
